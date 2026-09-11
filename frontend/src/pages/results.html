@@ -1,0 +1,270 @@
+
+<div class="app-shell">
+<!-- ===================== SIDEBAR ===================== -->
+<aside class="sidebar">
+<div class="brand">
+<div class="brand-mark">
+<svg fill="none" viewbox="0 0 24 24"><path d="M12 2L4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" fill="#fff" opacity="0.95"></path><path d="M9 12l2 2 4-4.5" stroke="#5B5FEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
+</div>
+<div class="brand-text">
+<div class="name">FactLens AI</div>
+<div class="tagline">Verify. Trust. Know.</div>
+</div>
+</div>
+<nav class="nav-group">
+<a class="nav-link" data-nav="dashboard" href="index.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+        Dashboard
+      </a>
+<a class="nav-link" data-nav="verify" href="verify.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 12.3l2.2 2.2 4.8-4.9"></path></svg>
+        Verify
+      </a>
+<a class="nav-link" data-nav="history" href="history.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+        History
+      </a>
+<a class="nav-link" data-nav="reports" href="reports.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h6M9 16h6M9 8h2"></path></svg>
+        Saved Reports
+      </a>
+<a class="nav-link" data-nav="sources" href="sources.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 9h8M8 13h8M8 17h5"></path></svg>
+        Sources
+      </a>
+</nav>
+<div class="nav-spacer"></div>
+<div class="sidebar-footer">
+<div class="avatar">AV</div>
+<div class="user-meta">
+<div class="u-name">Arjun Verma</div>
+<div class="u-email">arjun@example.com</div>
+</div>
+<button aria-label="Account menu" title="Account menu">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</div>
+</aside>
+<!-- ===================== MAIN ===================== -->
+<div class="main">
+<header class="topbar">
+<div>
+<div class="crumb">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M15 18l-6-6 6-6"></path></svg>
+<a href="verify.html">Back to Verify</a>
+</div>
+<div class="page-title">Verification Results</div>
+</div>
+<div class="flex gap-8">
+<button class="btn">
+<svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+          Export Report
+        </button>
+</div>
+</header>
+<main class="content">
+<!-- Overview card -->
+<section class="card card-pad mb-16">
+<div class="overview-grid">
+<div class="score-ring-wrap">
+<svg id="scoreRing"></svg>
+<div class="score-center">
+<div class="num">78%</div>
+<div class="lbl">Overall Credibility</div>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-8 mb-8">
+<svg fill="none" height="20" stroke="var(--amber-600)" stroke-width="2" viewbox="0 0 24 24" width="20"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5M12 16h.01"></path></svg>
+<h2 style="font-size:19px; font-weight:800; color:var(--amber-600);">Mostly Accurate</h2>
+</div>
+<p class="text-muted" style="max-width:320px;">This content is mostly accurate but contains some incorrect or misleading information.</p>
+<div class="flex gap-16 mt-16">
+<span class="badge badge-green"><span class="badge-dot"></span>Verified: 14</span>
+<span class="badge badge-amber"><span class="badge-dot"></span>Partially True: 3</span>
+<span class="badge badge-red"><span class="badge-dot"></span>False: 5</span>
+</div>
+</div>
+<div class="meta-col">
+<div class="meta-row">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><rect height="12" rx="2" width="13" x="3" y="6"></rect><path d="M16 10l5-3v10l-5-3"></path></svg>
+<div><div class="meta-label">Source Type</div><div class="meta-value">Video</div></div>
+</div>
+<div class="meta-row">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 13h6M9 17h4"></path></svg>
+<div><div class="meta-label">File Name / URL</div><div class="meta-value">Climate Change Explained.mp4</div></div>
+</div>
+<div class="meta-row">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+<div><div class="meta-label">Duration</div><div class="meta-value">00:01:16</div></div>
+</div>
+<div class="meta-row">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="9"></circle></svg>
+<div><div class="meta-label">Verified At</div><div class="meta-value">May 26, 2025 · 10:30 AM</div></div>
+</div>
+</div>
+<div class="video-thumb">
+<div class="video-frame">
+<img alt="Video preview: wind turbines on a hillside" src="https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=600&amp;q=60"/>
+<div class="play-btn">
+<svg fill="currentColor" viewbox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+</div>
+</div>
+<div class="timeline-track">
+<div style="width:35%; background:var(--green-600);"></div>
+<div style="width:20%; background:var(--amber-600);"></div>
+<div style="width:15%; background:var(--red-600);"></div>
+<div style="width:30%; background:var(--green-600);"></div>
+</div>
+<div class="time-row"><span>00:00</span><span>01:16</span></div>
+<a class="view-timeline-link" href="#">View Timeline →</a>
+</div>
+</div>
+</section>
+<!-- Tabs -->
+<div class="tabs mb-16" id="resultTabs">
+<div class="tab active" data-tab="claims">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 10h8M8 14h5"></path></svg>
+          Claims
+        </div>
+<div class="tab" data-tab="evidence">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.8 7.1 18.2 8 12.7 4 8.8l5.5-.8z"></path></svg>
+          Evidence
+        </div>
+<div class="tab" data-tab="summary">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 13h6M9 17h4"></path></svg>
+          Summary
+        </div>
+<div class="tab" data-tab="sources">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l2.5 2.5"></path></svg>
+          Sources (18)
+        </div>
+<div class="tab" data-tab="explanation">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M12 3a5 5 0 015 5c0 2-1.2 3-2 4s-1 1.5-1 2.5h-4c0-1-.2-1.5-1-2.5s-2-2-2-4a5 5 0 015-5z"></path><path d="M10 18h4"></path></svg>
+          AI Explanation
+        </div>
+</div>
+<div class="results-grid">
+<!-- Claims column -->
+<div>
+<div class="claims-toolbar">
+<div class="input-icon-wrap">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+<input class="input" id="claimSearch" placeholder="Search claims..."/>
+</div>
+</div>
+<div id="claimList">
+<div class="claim-row risk-green selected" data-claim="1">
+<div class="claim-num">1</div>
+<div class="claim-body">
+<div class="claim-text">Climate change is mainly caused by human activities.</div>
+<div class="claim-time">00:00 – 00:05</div>
+</div>
+<div class="claim-right">
+<span class="badge badge-green"><span class="badge-dot"></span>Verified</span>
+<span class="claim-confidence">98% Confidence</span>
+</div>
+</div>
+<div class="claim-row risk-green" data-claim="2">
+<div class="claim-num">2</div>
+<div class="claim-body">
+<div class="claim-text">Carbon dioxide is a major greenhouse gas responsible for global warming.</div>
+<div class="claim-time">00:05 – 00:12</div>
+</div>
+<div class="claim-right">
+<span class="badge badge-green"><span class="badge-dot"></span>Verified</span>
+<span class="claim-confidence">95% Confidence</span>
+</div>
+</div>
+<div class="claim-row risk-amber" data-claim="3">
+<div class="claim-num">3</div>
+<div class="claim-body">
+<div class="claim-text">Climate change stopped in 1998.</div>
+<div class="claim-time">00:12 – 00:20</div>
+</div>
+<div class="claim-right">
+<span class="badge badge-amber"><span class="badge-dot"></span>Partially True</span>
+<span class="claim-confidence">45% Confidence</span>
+</div>
+</div>
+<div class="claim-row risk-red" data-claim="4">
+<div class="claim-num">4</div>
+<div class="claim-body">
+<div class="claim-text">Arctic ice has increased over the last decade.</div>
+<div class="claim-time">00:20 – 00:32</div>
+</div>
+<div class="claim-right">
+<span class="badge badge-red"><span class="badge-dot"></span>False</span>
+<span class="claim-confidence">99% Confidence</span>
+</div>
+</div>
+<div class="claim-row risk-green" data-claim="5">
+<div class="claim-num">5</div>
+<div class="claim-body">
+<div class="claim-text">Renewable energy can help reduce the impact of climate change.</div>
+<div class="claim-time">00:32 – 00:45</div>
+</div>
+<div class="claim-right">
+<span class="badge badge-green"><span class="badge-dot"></span>Verified</span>
+<span class="claim-confidence">90% Confidence</span>
+</div>
+</div>
+</div>
+<div style="text-align:center; margin-top:6px;">
+<button class="btn btn-ghost btn-sm" id="showMoreBtn">Show more claims ▾</button>
+</div>
+</div>
+<!-- Evidence / claim detail panel -->
+<div class="card card-pad evidence-panel">
+<div class="ep-header">
+<div class="flex gap-10">
+<div class="ep-claim-num" id="epNum">1</div>
+<div>
+<div class="text-sm text-muted mb-4">Claim Selected</div>
+<div id="epClaimText" style="font-weight:700; font-size:14px; max-width:230px;">Climate change is mainly caused by human activities.</div>
+</div>
+</div>
+<span class="badge badge-green" id="epBadge"><span class="badge-dot"></span>Verified</span>
+</div>
+<div class="section-title" style="font-size:13.5px;">Evidence &amp; Explanation</div>
+<p class="text-muted mt-8" id="epEvidence" style="font-size:13.2px;">
+            Multiple studies from global climate organizations confirm that human activities, especially the emission of greenhouse gases like CO₂, are the primary driver of recent climate change.
+          </p>
+<div class="section-title mt-20" style="font-size:13.5px;">Top Sources</div>
+<div id="epSources">
+<div class="source-item">
+<div class="source-rank">1</div>
+<div>
+<div class="source-name">IPCC – Climate Change 2023: Synthesis Report</div>
+<div class="source-meta">ipcc.ch · Published Mar 2023</div>
+</div>
+<span class="badge badge-green text-sm" style="padding:3px 9px;">High Reliability</span>
+<a aria-label="Open source" class="source-link" href="#"><svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><path d="M21 14v6a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h6"></path></svg></a>
+</div>
+<div class="source-item">
+<div class="source-rank">2</div>
+<div>
+<div class="source-name">NASA – Causes of Climate Change</div>
+<div class="source-meta">climate.nasa.gov · Published Jan 2024</div>
+</div>
+<span class="badge badge-green text-sm" style="padding:3px 9px;">High Reliability</span>
+<a aria-label="Open source" class="source-link" href="#"><svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><path d="M21 14v6a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h6"></path></svg></a>
+</div>
+<div class="source-item">
+<div class="source-rank">3</div>
+<div>
+<div class="source-name">EPA – Climate Change: Basic Information</div>
+<div class="source-meta">epa.gov · Updated Feb 2024</div>
+</div>
+<span class="badge badge-green text-sm" style="padding:3px 9px;">High Reliability</span>
+<a aria-label="Open source" class="source-link" href="#"><svg fill="none" height="14" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M14 3h7v7"></path><path d="M10 14L21 3"></path><path d="M21 14v6a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h6"></path></svg></a>
+</div>
+</div>
+<a class="btn btn-block mt-16" href="sources.html">View all 7 sources</a>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+

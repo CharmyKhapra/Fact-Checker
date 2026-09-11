@@ -1,0 +1,13 @@
+{
+  "theme": "default",
+  "flowchart": {
+    "useMaxWidth": false,
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 40,
+    "rankSpacing": 60,
+    "padding": 20
+  },
+  "fontSize": 13,
+  "fontFamily": "Segoe UI, Arial, sans-serif"
+}

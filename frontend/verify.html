@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verify · FactLens AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<script>document.documentElement.style.visibility="hidden";</script>
+<script>setTimeout(function(){ if (document.documentElement.style.visibility === "hidden") { console.error("FactLens: session check timed out after 6s - revealing page. Check console for the real error above."); document.documentElement.style.visibility = "visible"; } }, 6000);</script>
+<script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+<script src="https://js.puter.com/v2/"></script>
+<script src="js/flens-config.js"></script>
+<script src="js/flens-session.js"></script>
+<script src="js/puter-verify.js"></script>
+<style>
+  .method-card{ cursor:pointer; }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+  .quick-link-row{ display:flex; gap:10px; align-items:flex-start; }
+  .quick-link-input-wrap{ flex:1; }
+  .quick-link-row .btn{ white-space:nowrap; }
+  .quick-link-badge{
+    display:inline-flex; align-items:center; gap:7px;
+    margin-top:12px; padding:6px 12px; border-radius:999px;
+    font-size:12px; font-weight:700; background:var(--indigo-100); color:var(--indigo-600);
+  }
+  .quick-link-badge svg{ width:14px; height:14px; }
+  .quick-link-badge.is-unknown{ background:var(--amber-100); color:var(--amber-600); }
+  .quick-link-badge.is-error{ background:var(--red-100); color:var(--red-600); }
+  @media(max-width:640px){ .quick-link-row{ flex-direction:column; } .quick-link-row .btn{ width:100%; justify-content:center; } }
+</style>
+</head>
+<body data-page="verify">
+
+<div class="app-shell">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" fill="#fff" opacity="0.95"/><path d="M9 12l2 2 4-4.5" stroke="#5B5FEF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="brand-text">
+        <div class="name">FactLens AI</div>
+        <div class="tagline">Verify. Trust. Know.</div>
+      </div>
+    </div>
+
+    <nav class="nav-group">
+      <a class="nav-link" data-nav="dashboard" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-link" data-nav="verify" href="verify.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.2 2.2 4.8-4.9"/></svg>
+        Verify
+      </a>
+      <a class="nav-link" data-nav="history" href="history.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        History
+      </a>
+      <a class="nav-link" data-nav="reports" href="reports.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6M9 8h2"/></svg>
+        Saved Reports
+      </a>
+      <a class="nav-link" data-nav="sources" href="sources.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+        Sources
+      </a>
+    </nav>
+
+    <div class="nav-spacer"></div>
+
+    <div class="sidebar-footer">
+      <div class="avatar">AV</div>
+      <div class="user-meta">
+        <div class="u-name">Arjun Verma</div>
+        <div class="u-email">arjun@example.com</div>
+      </div>
+      <button title="Account menu" aria-label="Account menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="page-title">Verify content</div>
+        <div class="page-subtitle">Submit a video, PDF, or plain text and FactLens AI will check every claim against trusted sources.</div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- Quick link paste -->
+      <section class="card card-pad mb-16" id="quickLinkCard">
+        <div class="section-title mb-4">Paste a link</div>
+        <div class="section-sub mb-12">Drop in a YouTube video, Instagram reel, X/TikTok clip, or a PDF link — FactLens AI figures out the rest.</div>
+        <div class="quick-link-row">
+          <div class="input-icon-wrap quick-link-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 15l6-6"/><path d="M13 6l1-1a3.5 3.5 0 015 5l-2 2M11 18l-1 1a3.5 3.5 0 01-5-5l2-2"/></svg>
+            <input class="input" id="quickLinkInput" type="url" placeholder="https://youtube.com/watch?v=... or instagram.com/reel/..." autocomplete="off" />
+          </div>
+          <button class="btn btn-primary" id="quickLinkBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            Verify link
+          </button>
+        </div>
+        <div id="quickLinkBadge" class="quick-link-badge hidden"></div>
+      </section>
+
+      <!-- Method selector -->
+      <section class="card card-pad mb-16">
+        <div class="section-title mb-12">What are you verifying?</div>
+        <div class="method-grid" id="methodGrid">
+          <button class="method-card active" data-method="video">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></div>
+            <div class="mc-title">Video / Reel</div>
+            <div class="mc-sub">Upload a file or paste a link</div>
+          </button>
+          <button class="method-card" data-method="pdf">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 13h6M9 17h4"/></svg></div>
+            <div class="mc-title">PDF document</div>
+            <div class="mc-sub">Typed or scanned, file or link</div>
+          </button>
+          <button class="method-card" data-method="text">
+            <div class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+            <div class="mc-title">Plain text</div>
+            <div class="mc-sub">Paste any sentence or paragraph</div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Panels -->
+      <section class="card card-pad">
+
+        <!-- VIDEO PANEL -->
+        <div class="panel active" id="panel-video">
+          <div class="flex justify-between items-center mb-12">
+            <div>
+              <div class="section-title">Video or reel</div>
+              <div class="section-sub">MP4, MOV, or a link from YouTube, Instagram, or X. Max 500MB / 30 min.</div>
+            </div>
+          </div>
+          <div class="subtoggle" data-toggle="video-source">
+            <button class="active" data-value="file">Upload from device</button>
+            <button data-value="url">Paste URL</button>
+          </div>
+
+          <div data-panel-source="video-file">
+            <div class="dropzone" id="dz-video">
+              <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"/></svg></div>
+              <div class="dz-title">Drop your video here, or click to browse</div>
+              <div class="dz-sub">Supports MP4, MOV, WEBM · up to 500MB</div>
+              <input type="file" id="file-video" accept="video/*" />
+            </div>
+            <div id="chip-video"></div>
+          </div>
+
+          <div data-panel-source="video-url" class="hidden">
+            <label class="field-label">Video URL</label>
+            <div class="input-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 15l6-6"/><path d="M13 6l1-1a3.5 3.5 0 015 5l-2 2M11 18l-1 1a3.5 3.5 0 01-5-5l2-2"/></svg>
+              <input class="input" id="video-url-input" type="url" placeholder="https://youtube.com/watch?v=..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF PANEL -->
+        <div class="panel" id="panel-pdf">
+          <div class="flex justify-between items-center mb-12">
+            <div>
+              <div class="section-title">PDF document</div>
+              <div class="section-sub">Typed or handwritten/scanned PDFs both work — scanned pages are read with OCR.</div>
+            </div>
+          </div>
+          <div class="subtoggle" data-toggle="pdf-source">
+            <button class="active" data-value="file">Upload from device</button>
+            <button data-value="url">Paste URL</button>
+          </div>
+
+          <div data-panel-source="pdf-file">
+            <div class="dropzone" id="dz-pdf">
+              <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 13h6M9 17h4"/></svg></div>
+              <div class="dz-title">Drop your PDF here, or click to browse</div>
+              <div class="dz-sub">Typed or scanned · up to 50MB</div>
+              <input type="file" id="file-pdf" accept="application/pdf" />
+            </div>
+            <div id="chip-pdf"></div>
+          </div>
+
+          <div data-panel-source="pdf-url" class="hidden">
+            <label class="field-label">PDF URL</label>
+            <div class="input-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 15l6-6"/><path d="M13 6l1-1a3.5 3.5 0 015 5l-2 2M11 18l-1 1a3.5 3.5 0 01-5-5l2-2"/></svg>
+              <input class="input" id="pdf-url-input" type="url" placeholder="https://example.com/report.pdf" />
+            </div>
+          </div>
+        </div>
+
+        <!-- TEXT PANEL -->
+        <div class="panel" id="panel-text">
+          <div class="section-title mb-4">Plain text</div>
+          <div class="section-sub mb-12">Paste a sentence, paragraph, or claim you found somewhere and want checked.</div>
+          <label class="field-label">Text to verify</label>
+          <textarea class="input" rows="7" placeholder="e.g. Climate change stopped in 1998..."></textarea>
+          <div class="text-sm text-muted mt-8" id="charCount">0 characters</div>
+        </div>
+
+        <hr class="divider" />
+        <div class="flex justify-between items-center mb-12">
+          <div>
+            <div class="text-sm" style="font-weight:700">Verification engine</div>
+            <div class="text-sm text-muted" id="engineHint">Puter runs free, unlimited AI checks right in your browser — no backend quota. PDF and text use it by default; video still uses the Gemini backend.</div>
+          </div>
+          <div class="subtoggle" data-engine-toggle>
+            <button class="active" data-value="puter" type="button">Puter (browser AI)</button>
+            <button data-value="gemini" type="button">Gemini (backend)</button>
+          </div>
+        </div>
+        <hr class="divider" />
+        <div class="flex justify-between items-center">
+          <div class="text-sm text-muted">By continuing you agree this content is yours to submit or is publicly available.</div>
+          <button class="btn btn-primary" id="verifyBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            Verify now
+          </button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  // ----- method switching -----
+  const methodCards = document.querySelectorAll('#methodGrid .method-card');
+  const panels = document.querySelectorAll('.panel');
+  methodCards.forEach(card => {
+    card.addEventListener('click', () => {
+      methodCards.forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      panels.forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + card.dataset.method).classList.add('active');
+    });
+  });
+
+  // preselect method from ?method= query param
+  const params = new URLSearchParams(location.search);
+  const initial = params.get('method');
+  if (initial) {
+    const map = { 'video-file':'video', 'video-url':'video', 'pdf':'pdf', 'text':'text' };
+    const target = map[initial] || initial;
+    const card = document.querySelector(`.method-card[data-method="${target}"]`);
+    if (card) card.click();
+    if (initial === 'video-url') document.querySelector('[data-toggle="video-source"] [data-value="url"]')?.click();
+  }
+
+  // ----- verification engine toggle (Puter vs Gemini) -----
+  let VERIFY_ENGINE = 'puter';
+  const engineToggle = document.querySelector('[data-engine-toggle]');
+  if (engineToggle) {
+    const engineButtons = engineToggle.querySelectorAll('button');
+    engineButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        engineButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        VERIFY_ENGINE = btn.dataset.value;
+      });
+    });
+  }
+
+  // ----- source sub-toggles (file vs url) for video & pdf -----
+  document.querySelectorAll('[data-toggle]').forEach(group => {
+    const name = group.dataset.toggle.split('-')[0]; // 'video' or 'pdf'
+    const buttons = group.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelector(`[data-panel-source="${name}-file"]`).classList.toggle('hidden', btn.dataset.value !== 'file');
+        document.querySelector(`[data-panel-source="${name}-url"]`).classList.toggle('hidden', btn.dataset.value !== 'url');
+      });
+    });
+  });
+
+  // ----- dropzones -----
+  function renderChip(container, file) {
+    container.innerHTML = `
+      <div class="file-chip">
+        <div class="fc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+        <div>
+          <div class="fc-name">${file.name}</div>
+          <div class="fc-size">${formatBytes(file.size)}</div>
+        </div>
+        <button class="fc-remove" aria-label="Remove file">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>`;
+    container.querySelector('.fc-remove').addEventListener('click', () => container.innerHTML = '');
+  }
+
+  initDropzone(document.getElementById('dz-video'), document.getElementById('file-video'), f => renderChip(document.getElementById('chip-video'), f));
+  initDropzone(document.getElementById('dz-pdf'), document.getElementById('file-pdf'), f => renderChip(document.getElementById('chip-pdf'), f));
+
+  // ----- character counter for text panel -----
+  const textarea = document.querySelector('#panel-text textarea');
+  const charCount = document.getElementById('charCount');
+  textarea.addEventListener('input', () => {
+    charCount.textContent = `${textarea.value.length} characters`;
+  });
+</script>
+
+<script>
+(() => {
+  const verifyBtn = document.getElementById('verifyBtn');
+  // When the HTML is opened with VS Code Live Server/file://, /api would
+  // incorrectly point at the static frontend server. The FastAPI app serves
+  // the same frontend on port 8000, so use it automatically for local use.
+  const API = window.FACTLENS_API_BASE || (() => {
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
+    if (isLocal && window.location.port !== '8000') {
+      return 'http://127.0.0.1:8000/api/verify';
+    }
+    return '/api/verify';
+  })();
+
+  function activeMethod() {
+    return document.querySelector('#methodGrid .method-card.active')?.dataset.method || 'video';
+  }
+  function showStatus(message, error=false, anchorBtn=verifyBtn) {
+    let el=document.getElementById('verifyStatus');
+    if(!el){
+      el=document.createElement('div'); el.id='verifyStatus';
+      el.className='text-sm'; el.style.marginTop='10px';
+      verifyBtn.parentElement.appendChild(el);
+    }
+    el.textContent=message;
+    el.style.color=error ? 'var(--red-600)' : 'var(--indigo-600)';
+  }
+
+  // ----- shared submit: posts a FormData payload to a FactLens endpoint,
+  // handles loading state on whichever button triggered it, and routes to results.html -----
+  async function submitVerification(endpoint, form, {btn, loadingMessage}) {
+    btn.disabled=true;
+    const prevOpacity=btn.style.opacity; btn.style.opacity='.65';
+    showStatus(loadingMessage);
+    try {
+      let res;
+      try {
+        res = await fetch(endpoint,{method:'POST',body:form});
+      } catch (networkErr) {
+        throw new Error(
+          `Could not reach the FactLens backend at ${API}. ` +
+          `Start it with: python -m uvicorn backend.main:app --reload`
+        );
+      }
+
+      // Do not blindly call res.json(). A proxy/static server can return an
+      // empty body or HTML, which previously caused "Unexpected end of JSON input".
+      const raw = await res.text();
+      let data = null;
+      if (raw.trim()) {
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
+          throw new Error(
+            `Backend returned ${res.status} ${res.statusText} instead of JSON. ` +
+            `Response: ${raw.slice(0,300)}`
+          );
+        }
+      }
+
+      if(!res.ok) {
+        throw new Error(
+          data?.detail || data?.message ||
+          `Verification failed (${res.status} ${res.statusText}).`
+        );
+      }
+      if(!data) {
+        throw new Error('The backend returned an empty response. Check the backend terminal for the actual error.');
+      }
+
+      sessionStorage.setItem('factlensResult',JSON.stringify(data));
+      location.href='results.html';
+    } catch(err) {
+      console.error('FactLens verification error:', err);
+      showStatus(err.message || 'Verification failed.',true);
+      btn.disabled=false; btn.style.opacity=prevOpacity;
+    }
+  }
+
+  // ----- Puter-engine submit path for text/pdf: does extraction (if any)
+  // via the backend (no Gemini involved), then runs claim extraction +
+  // verification entirely in-browser via puter.ai.chat(). Falls back to the
+  // Gemini backend automatically if Puter isn't available or errors out. -----
+  async function submitViaPuter(kind, {btn, loadingMessage}) {
+    btn.disabled=true;
+    const prevOpacity=btn.style.opacity; btn.style.opacity='.65';
+    showStatus(loadingMessage);
+
+    if (!window.FactLensPuterVerify || !window.FactLensPuterVerify.isAvailable()) {
+      showStatus('Puter.js is not available in this browser — falling back to Gemini…');
+      return false; // caller falls back to submitVerification()
+    }
+
+    try {
+      let report;
+      if (kind.type === 'text') {
+        report = await window.FactLensPuterVerify.verifyPlainText(kind.text, {
+          onProgress: (n,total) => showStatus(`Verifying claims with Puter (batch ${n}/${total})…`),
+        });
+      } else if (kind.type === 'pdf') {
+        showStatus('Extracting PDF text…');
+        const form = new FormData();
+        let extractEndpoint;
+        if (kind.file) { form.append('file', kind.file); extractEndpoint = API + '/pdf-extract'; }
+        else { form.append('url', kind.url); extractEndpoint = API + '/pdf-url-extract'; }
+
+        const res = await fetch(extractEndpoint, {method:'POST', body:form});
+        const raw = await res.text();
+        const data = raw.trim() ? JSON.parse(raw) : null;
+        if (!res.ok || !data) {
+          throw new Error(data?.detail || `PDF extraction failed (${res.status}).`);
+        }
+
+        showStatus('Extracting claims with Puter…');
+        report = await window.FactLensPuterVerify.verifyPdfExtraction(data, {
+          onProgress: (n,total) => showStatus(`Verifying claims with Puter (batch ${n}/${total})…`),
+        });
+      } else {
+        return false;
+      }
+
+      sessionStorage.setItem('factlensResult', JSON.stringify(report));
+      location.href='results.html';
+      return true;
+    } catch(err) {
+      console.error('FactLens Puter verification error:', err);
+      showStatus(`Puter verification failed (${err.message}) — falling back to Gemini…`, true);
+      btn.disabled=false; btn.style.opacity=prevOpacity;
+      return false; // caller falls back to submitVerification()
+    }
+  }
+
+  verifyBtn.addEventListener('click', async () => {
+    const method=activeMethod();
+    const form=new FormData();
+    let endpoint=API+'/'+method;
+    let loadingMessage='Extracting claims and checking live sources…';
+
+    if(method==='text'){
+      const text=document.querySelector('#panel-text textarea').value.trim();
+      if(!text) return showStatus('Please enter text to verify.',true);
+      form.append('text',text);
+
+      if (VERIFY_ENGINE === 'puter') {
+        const ok = await submitViaPuter({type:'text', text}, {btn:verifyBtn, loadingMessage:'Extracting claims with Puter…'});
+        if (ok) return;
+      }
+    } else if(method==='video'){
+      loadingMessage='Transcribing video and checking claims…';
+      const urlMode=document.querySelector('[data-toggle="video-source"] .active')?.dataset.value;
+      if(urlMode==='url'){
+        const url=document.getElementById('video-url-input').value.trim();
+        if(!url) return showStatus('Please enter a video URL.',true);
+        endpoint=API+'/video-url'; form.append('url',url);
+      } else {
+        const file=document.getElementById('file-video').files[0];
+        if(!file) return showStatus('Please select a video file.',true);
+        form.append('file',file);
+      }
+      // Video always uses the Gemini backend for now: verification runs on
+      // the transcript alongside SRT timestamp mapping. Puter support for
+      // video is not wired up yet.
+    } else if(method==='pdf'){
+      loadingMessage='Extracting PDF text and checking claims…';
+      const urlMode=document.querySelector('[data-toggle="pdf-source"] .active')?.dataset.value;
+      let puterKind;
+      if(urlMode==='url'){
+        const url=document.getElementById('pdf-url-input').value.trim();
+        if(!url) return showStatus('Please enter a PDF URL.',true);
+        endpoint=API+'/pdf-url'; form.append('url',url);
+        puterKind={type:'pdf', url};
+      } else {
+        const file=document.getElementById('file-pdf').files[0];
+        if(!file) return showStatus('Please select a PDF file.',true);
+        form.append('file',file);
+        puterKind={type:'pdf', file};
+      }
+
+      if (VERIFY_ENGINE === 'puter') {
+        const ok = await submitViaPuter(puterKind, {btn:verifyBtn, loadingMessage:'Extracting PDF text…'});
+        if (ok) return;
+      }
+    }
+
+    submitVerification(endpoint, form, {btn:verifyBtn, loadingMessage});
+  });
+
+  // ----- quick "paste any link" box: auto-detects platform and routes straight
+  // to /video-url (YouTube, Instagram, TikTok, X, Facebook, Vimeo, etc. via yt-dlp)
+  // or /pdf-url, without making the person pick a method first -----
+  const LINK_PLATFORMS = [
+    { id:'youtube',   label:'YouTube',   type:'video', test:h=>/(^|\.)youtube\.com$|^youtu\.be$/.test(h) },
+    { id:'instagram', label:'Instagram', type:'video', test:h=>/(^|\.)instagram\.com$/.test(h) },
+    { id:'tiktok',    label:'TikTok',    type:'video', test:h=>/(^|\.)tiktok\.com$/.test(h) },
+    { id:'x',         label:'X / Twitter', type:'video', test:h=>/(^|\.)(twitter|x)\.com$/.test(h) },
+    { id:'facebook',  label:'Facebook',  type:'video', test:h=>/(^|\.)facebook\.com$|^fb\.watch$/.test(h) },
+    { id:'vimeo',     label:'Vimeo',     type:'video', test:h=>/(^|\.)vimeo\.com$/.test(h) },
+  ];
+  const ICONS = {
+    video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>',
+    pdf:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z"/><path d="M9 13h6M9 17h4"/></svg>',
+    warn:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>',
+  };
+
+  function detectLink(raw) {
+    const value=(raw||'').trim();
+    if(!value) return null;
+    let url;
+    try { url=new URL(value); } catch(_) {
+      try { url=new URL('https://'+value); } catch(__) { return {ok:false, reason:'not-a-url'}; }
+    }
+    if(!/^https?:$/.test(url.protocol)) return {ok:false, reason:'not-a-url'};
+    const host=url.hostname.toLowerCase().replace(/^www\./,'');
+    if(/\.pdf($|\?)/i.test(url.pathname)) return {ok:true, type:'pdf', label:'PDF document', url:url.href};
+    const platform=LINK_PLATFORMS.find(p=>p.test(host));
+    if(platform) return {ok:true, type:'video', label:platform.label, url:url.href};
+    // Unknown host: yt-dlp supports thousands of sites, so still try it as a video link.
+    return {ok:true, type:'video', label:'video link', unknown:true, url:url.href};
+  }
+
+  const quickInput=document.getElementById('quickLinkInput');
+  const quickBtn=document.getElementById('quickLinkBtn');
+  const quickBadge=document.getElementById('quickLinkBadge');
+
+  function renderQuickBadge(detection) {
+    if(!detection || !quickInput.value.trim()) { quickBadge.className='quick-link-badge hidden'; quickBadge.innerHTML=''; return; }
+    if(!detection.ok) {
+      quickBadge.className='quick-link-badge is-error';
+      quickBadge.innerHTML=ICONS.warn+'<span>That doesn\'t look like a valid link yet</span>';
+      return;
+    }
+    if(detection.type==='pdf') {
+      quickBadge.className='quick-link-badge';
+      quickBadge.innerHTML=ICONS.pdf+`<span>Detected: PDF document</span>`;
+    } else if(detection.unknown) {
+      quickBadge.className='quick-link-badge is-unknown';
+      quickBadge.innerHTML=ICONS.video+`<span>Unrecognized site — will still try it as a video link</span>`;
+    } else {
+      quickBadge.className='quick-link-badge';
+      quickBadge.innerHTML=ICONS.video+`<span>Detected: ${detection.label}</span>`;
+    }
+  }
+
+  quickInput.addEventListener('input', () => renderQuickBadge(detectLink(quickInput.value)));
+
+  quickBtn.addEventListener('click', () => {
+    const detection=detectLink(quickInput.value);
+    renderQuickBadge(detection);
+    if(!detection || !detection.ok) return showStatus('Please paste a valid link first.',true);
+
+    const form=new FormData();
+    form.append('url', detection.url);
+    const endpoint = detection.type==='pdf' ? API+'/pdf-url' : API+'/video-url';
+    const loadingMessage = detection.type==='pdf'
+      ? 'Extracting PDF text and checking claims…'
+      : 'Downloading link and checking claims…';
+
+    // Keep the standard panels in sync so a retry from there has the same link.
+    if(detection.type==='pdf'){
+      document.querySelector('.method-card[data-method="pdf"]')?.click();
+      document.querySelector('[data-toggle="pdf-source"] [data-value="url"]')?.click();
+      document.getElementById('pdf-url-input').value=detection.url;
+    } else {
+      document.querySelector('.method-card[data-method="video"]')?.click();
+      document.querySelector('[data-toggle="video-source"] [data-value="url"]')?.click();
+      document.getElementById('video-url-input').value=detection.url;
+    }
+
+    submitVerification(endpoint, form, {btn:quickBtn, loadingMessage});
+  });
+})();
+</script>
+<script>
+  if (window.FactLensAuth) {
+    FactLensAuth.requireAuth();
+  } else {
+    console.error("FactLens: session-check script failed to load (an extension may be blocking js/flens-session.js). Showing the page unprotected so it is not stuck blank -- please check ad-blocker/privacy-extension settings for this site.");
+    document.documentElement.style.visibility = "visible";
+  }
+</script>
+</body>
+</html>

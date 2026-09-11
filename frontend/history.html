@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>History · FactLens AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<script>document.documentElement.style.visibility="hidden";</script>
+<script>setTimeout(function(){ if (document.documentElement.style.visibility === "hidden") { console.error("FactLens: session check timed out after 6s - revealing page. Check console for the real error above."); document.documentElement.style.visibility = "visible"; } }, 6000);</script>
+<script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+<script src="js/flens-config.js"></script>
+<script src="js/flens-session.js"></script>
+<style>
+  .filter-bar{ display:flex; gap:10px; align-items:center; margin-bottom:16px; }
+  .filter-bar .input-icon-wrap{ width:280px; }
+  .filter-select{ padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:#fff; font-size:13px; font-weight:600; color:var(--text-700); }
+  .row-link{ color:var(--indigo-600); font-weight:600; }
+</style>
+</head>
+<body data-page="history">
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" fill="#fff" opacity="0.95"/><path d="M9 12l2 2 4-4.5" stroke="#5B5FEF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="brand-text"><div class="name">FactLens AI</div><div class="tagline">Verify. Trust. Know.</div></div>
+    </div>
+    <nav class="nav-group">
+      <a class="nav-link" data-nav="dashboard" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Dashboard</a>
+      <a class="nav-link" data-nav="verify" href="verify.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.3l2.2 2.2 4.8-4.9"/></svg>Verify</a>
+      <a class="nav-link" data-nav="history" href="history.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>History</a>
+      <a class="nav-link" data-nav="reports" href="reports.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6M9 8h2"/></svg>Saved Reports</a>
+      <a class="nav-link" data-nav="sources" href="sources.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Sources</a>
+    </nav>
+    <div class="nav-spacer"></div>
+    <div class="sidebar-footer">
+      <div class="avatar">AV</div>
+      <div class="user-meta"><div class="u-name">Arjun Verma</div><div class="u-email">arjun@example.com</div></div>
+      <button aria-label="Account menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="page-title">History</div>
+        <div class="page-subtitle">Every piece of content you've verified, in one place.</div>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="card card-pad">
+        <div class="filter-bar">
+          <div class="input-icon-wrap grow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input class="input" id="historySearch" placeholder="Search by file name, URL, or text..." />
+          </div>
+          <select class="filter-select">
+            <option>All types</option>
+            <option>Video / Reel</option>
+            <option>PDF</option>
+            <option>Text</option>
+            <option>Web page</option>
+          </select>
+          <select class="filter-select">
+            <option>All verdicts</option>
+            <option>Verified</option>
+            <option>Partially True</option>
+            <option>False</option>
+          </select>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr><th>Content</th><th>Type</th><th>Date verified</th><th>Score</th><th>Verdict</th><th></th></tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr class="hist-row">
+              <td>Climate Change Explained.mp4</td>
+              <td><span class="type-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Video</span></td>
+              <td class="text-muted">May 26, 2025 · 10:30 AM</td>
+              <td>78%</td>
+              <td><span class="badge badge-amber"><span class="badge-dot"></span>Mostly Accurate</span></td>
+              <td><a class="row-link" href="results.html">View report →</a></td>
+            </tr>
+            <tr class="hist-row">
+              <td>Union Budget 2025 — Key Highlights.pdf</td>
+              <td><span class="type-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z"/><path d="M9 13h6M9 17h4"/></svg>PDF</span></td>
+              <td class="text-muted">May 24, 2025 · 4:12 PM</td>
+              <td>94%</td>
+              <td><span class="badge badge-green"><span class="badge-dot"></span>Verified</span></td>
+              <td><a class="row-link" href="results.html">View report →</a></td>
+            </tr>
+            <tr class="hist-row">
+              <td>"5G towers cause health issues" — pasted text</td>
+              <td><span class="type-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Text</span></td>
+              <td class="text-muted">May 21, 2025 · 9:05 AM</td>
+              <td>12%</td>
+              <td><span class="badge badge-red"><span class="badge-dot"></span>False</span></td>
+              <td><a class="row-link" href="results.html">View report →</a></td>
+            </tr>
+            <tr class="hist-row">
+              <td>instagram.com/reel/Cx92k...</td>
+              <td><span class="type-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg>Reel</span></td>
+              <td class="text-muted">May 19, 2025 · 6:40 PM</td>
+              <td>88%</td>
+              <td><span class="badge badge-green"><span class="badge-dot"></span>Verified</span></td>
+              <td><a class="row-link" href="results.html">View report →</a></td>
+            </tr>
+            <tr class="hist-row">
+              <td>timesnews-example.com/article/election-claims</td>
+              <td><span class="type-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 15l6-6"/><path d="M13 6l1-1a3.5 3.5 0 015 5l-2 2M11 18l-1 1a3.5 3.5 0 01-5-5l2-2"/></svg>Web page</span></td>
+              <td class="text-muted">May 15, 2025 · 11:22 AM</td>
+              <td>56%</td>
+              <td><span class="badge badge-amber"><span class="badge-dot"></span>Mostly Accurate</span></td>
+              <td><a class="row-link" href="results.html">View report →</a></td>
+            </tr>
+            <tr class="hist-row">
+              <td>Quarterly-Sales-Report.pdf</td>
+              <td><span class="type-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z"/><path d="M9 13h6M9 17h4"/></svg>PDF</span></td>
+              <td class="text-muted">May 12, 2025 · 2:50 PM</td>
+              <td>97%</td>
+              <td><span class="badge badge-green"><span class="badge-dot"></span>Verified</span></td>
+              <td><a class="row-link" href="results.html">View report →</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  initSearchFilter(document.getElementById('historySearch'), '.hist-row', 'td:first-child');
+</script>
+<script>
+  if (window.FactLensAuth) {
+    FactLensAuth.requireAuth();
+  } else {
+    console.error("FactLens: session-check script failed to load (an extension may be blocking js/flens-session.js). Showing the page unprotected so it is not stuck blank -- please check ad-blocker/privacy-extension settings for this site.");
+    document.documentElement.style.visibility = "visible";
+  }
+</script>
+</body>
+</html>

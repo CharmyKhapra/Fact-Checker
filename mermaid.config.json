@@ -1,0 +1,21 @@
+{
+  "theme": "default",
+  "sequence": {
+    "diagramMarginX": 30,
+    "diagramMarginY": 20,
+    "actorMargin": 40,
+    "width": 180,
+    "height": 46,
+    "boxMargin": 8,
+    "boxTextMargin": 4,
+    "noteMargin": 8,
+    "messageMargin": 30,
+    "mirrorActors": true,
+    "useMaxWidth": false,
+    "wrap": true,
+    "wrapPadding": 10,
+    "labelBoxWidth": 50,
+    "labelBoxHeight": 20
+  },
+  "fontSize": 13
+}

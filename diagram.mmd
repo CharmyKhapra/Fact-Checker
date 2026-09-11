@@ -1,0 +1,221 @@
+sequenceDiagram
+    autonumber
+
+    actor User
+    participant Browser as Browser
+    participant Auth0 as Auth0
+    participant VerifyPage as verify.html
+    participant FastAPI as FastAPI
+    participant VerifyRoute as routes/verify.py
+    participant ClaimExtractor as claim_extractor.py
+    participant Verifier as verifier.py
+    participant GeminiClient as gemini_client.py
+    participant GeminiAPI as Gemini API
+    participant Whisper as Faster-Whisper
+    participant PyMuPDF as PyMuPDF
+    participant ytdlp as yt-dlp
+    participant Mapping as mapping.py
+    participant ResultsPage as results.html
+
+    %% ── AUTH FLOW ──
+    rect rgb(220, 235, 255)
+        Note over User,Auth0: AUTH FLOW
+        User->>Browser: Visit protected page
+        Browser->>Browser: Set visibility hidden
+        Browser->>Auth0: createAuth0Client(domain, clientId)
+        Auth0-->>Browser: Client ready (localStorage cache)
+        Browser->>Auth0: isAuthenticated()
+        Auth0-->>Browser: false → redirect to login.html
+        User->>Browser: Click "Log in with Auth0"
+        Browser->>Auth0: loginWithRedirect()
+        Auth0-->>User: Auth0 Universal Login page
+        User->>Auth0: Enter credentials
+        Auth0-->>Browser: Redirect → login.html?code=XXX
+        Browser->>Browser: Check sessionStorage (de-dup guard)
+        Browser->>Auth0: handleRedirectCallback()
+        Auth0-->>Browser: Tokens stored in localStorage
+        Browser->>Browser: Redirect to saved returnTo page
+        Browser->>Auth0: isAuthenticated() → true
+        Browser->>Auth0: getUser()
+        Auth0-->>Browser: Profile (name, email, picture)
+        Browser->>Browser: populateSidebar(user)
+        Browser->>Browser: reveal() → visibility visible
+    end
+
+    %% ── TEXT VERIFICATION ──
+    rect rgb(220, 255, 230)
+        Note over User,ResultsPage: TEXT VERIFICATION FLOW
+        User->>VerifyPage: Select Plain Text, paste text, click Verify now
+        VerifyPage->>VerifyPage: Build FormData {text}
+        VerifyPage->>FastAPI: POST /api/verify/text
+        FastAPI->>VerifyRoute: verify_text(text)
+        VerifyRoute->>VerifyRoute: Validate length ≤ MAX_TEXT_LENGTH
+        VerifyRoute->>ClaimExtractor: extract_claims(text)
+        ClaimExtractor->>GeminiClient: call_json(SYSTEM_PROMPT, text, json_object=True)
+        GeminiClient->>GeminiAPI: generate_content (structured JSON mode)
+        GeminiAPI-->>GeminiClient: {"claims":[{text, source_snippet},...]}
+        GeminiClient-->>ClaimExtractor: (parsed_dict, [])
+        ClaimExtractor-->>VerifyRoute: List[Claim] (≤ 20)
+        VerifyRoute->>Verifier: verify_claims(claims)
+        loop Each batch of 4 claims
+            Verifier->>GeminiClient: call_json(batch_prompt, enable_web_search=True)
+            GeminiClient->>GeminiAPI: generate_content (Google Search grounded)
+            GeminiAPI->>GeminiAPI: Live Google Search per claim
+            GeminiAPI-->>GeminiClient: JSON text + grounding_metadata
+            GeminiClient->>GeminiClient: _extract_json(text)
+            GeminiClient->>GeminiClient: _grounding_sources(response)
+            GeminiClient-->>Verifier: (results_dict, [{title,url},...])
+        end
+        Verifier->>Verifier: Match results by claim_index
+        Verifier->>Verifier: Compute overall_score and summary
+        Verifier-->>VerifyRoute: Report(score, summary, claims, warnings)
+        VerifyRoute-->>FastAPI: report.model_dump() + {input_type:"text"}
+        FastAPI-->>VerifyPage: JSON response
+        VerifyPage->>Browser: sessionStorage.setItem("factlensResult", JSON)
+        VerifyPage->>Browser: Redirect to results.html
+        Browser->>ResultsPage: Load results.html
+        ResultsPage->>Browser: sessionStorage.getItem("factlensResult")
+        ResultsPage->>ResultsPage: Render score, verdict pills, explanations, sources
+        ResultsPage-->>User: Verification report displayed
+    end
+
+    %% ── VIDEO FILE VERIFICATION ──
+    rect rgb(255, 245, 215)
+        Note over User,ResultsPage: VIDEO FILE VERIFICATION FLOW
+        User->>VerifyPage: Drop video file, click Verify now
+        VerifyPage->>VerifyPage: Build FormData {file}
+        VerifyPage->>FastAPI: POST /api/verify/video (multipart)
+        FastAPI->>VerifyRoute: verify_video(file)
+        VerifyRoute->>VerifyRoute: _save_upload() → TEMP_DIR/<uuid>.mp4
+
+        Note over VerifyRoute,Whisper: Stage 1 — Transcription
+        VerifyRoute->>Whisper: transcribe_video(temp_path)
+        Whisper->>Whisper: Load WhisperModel (large-v3-turbo, cpu, int8)
+        Whisper->>Whisper: model.transcribe(beam_size=5, vad_filter=True)
+        Whisper->>Whisper: segments_to_srt() → SRT text
+        Whisper->>Whisper: write_srt() → OUTPUT_DIR/<stem>.srt
+        Whisper->>Whisper: parse_srt() → [{start,end,text},...]
+        Whisper-->>VerifyRoute: {text, segments, srt, language, duration}
+
+        Note over VerifyRoute,GeminiAPI: Stage 2 — Claim Extraction
+        VerifyRoute->>ClaimExtractor: extract_claims(transcript.text)
+        ClaimExtractor->>GeminiClient: call_json(..., json_object=True)
+        GeminiClient->>GeminiAPI: generate_content (structured JSON)
+        GeminiAPI-->>GeminiClient: {claims:[...]}
+        GeminiClient-->>ClaimExtractor: (dict, [])
+        ClaimExtractor-->>VerifyRoute: List[Claim]
+
+        Note over VerifyRoute,GeminiAPI: Stage 3 — Web Verification
+        VerifyRoute->>Verifier: verify_claims(claims)
+        loop Each batch of 4 claims
+            Verifier->>GeminiClient: call_json(..., enable_web_search=True)
+            GeminiClient->>GeminiAPI: generate_content (Google Search grounded)
+            GeminiAPI->>GeminiAPI: Live Google Search
+            GeminiAPI-->>GeminiClient: results JSON + grounding URLs
+            GeminiClient-->>Verifier: (results, sources)
+        end
+        Verifier-->>VerifyRoute: Report
+
+        Note over VerifyRoute,Mapping: Stage 4 — Timestamp Mapping
+        VerifyRoute->>Mapping: attach_timestamps(report.claims, segments)
+        Mapping->>Mapping: Fuzzy-match source_snippet → SRT segment
+        Mapping->>Mapping: score ≥ 0.35 → set timestamp_start / timestamp_end
+        Mapping-->>VerifyRoute: results (modified in-place)
+
+        VerifyRoute->>VerifyRoute: _persist_video() → MEDIA_DIR/<uuid>.mp4
+        VerifyRoute->>VerifyRoute: Delete temp file (finally)
+        VerifyRoute-->>FastAPI: report + {media_url, transcript, input_type:"video"}
+        FastAPI-->>VerifyPage: JSON response
+        VerifyPage->>Browser: sessionStorage → results.html
+        ResultsPage->>ResultsPage: player.src = /media/<uuid>.mp4
+        ResultsPage->>ResultsPage: Build colored timeline bar (green/red/amber/gray)
+        ResultsPage->>ResultsPage: Render claims with timestamps
+        ResultsPage->>ResultsPage: Render clickable transcript rows
+        ResultsPage-->>User: Video + timeline + claims displayed
+        User->>ResultsPage: Click claim or transcript row
+        ResultsPage->>ResultsPage: seek(start,end) - set currentTime and play video
+    end
+
+    %% ── VIDEO URL VERIFICATION ──
+    rect rgb(255, 230, 230)
+        Note over User,ResultsPage: VIDEO URL VERIFICATION FLOW
+        User->>VerifyPage: Paste video URL, click Verify link
+        VerifyPage->>FastAPI: POST /api/verify/video-url (FormData {url})
+        FastAPI->>VerifyRoute: verify_video_url(url)
+        VerifyRoute->>ytdlp: YoutubeDL.extract_info(url, download=True)
+        Note over ytdlp: Supports YouTube, TikTok,<br/>Instagram, X/Twitter, Vimeo…
+        ytdlp-->>VerifyRoute: Downloaded MP4 in temp dir
+        Note over VerifyRoute,ResultsPage: Identical pipeline to Video File (Stages 1–4)
+        VerifyRoute-->>FastAPI: report + {media_url, source_url, transcript}
+        FastAPI-->>VerifyPage: JSON response
+        VerifyPage->>Browser: sessionStorage → results.html (same as video file)
+    end
+
+    %% ── PDF VERIFICATION ──
+    rect rgb(240, 228, 255)
+        Note over User,ResultsPage: PDF VERIFICATION FLOW
+        User->>VerifyPage: Upload PDF or paste PDF URL, click Verify now
+        VerifyPage->>FastAPI: POST /api/verify/pdf or /api/verify/pdf-url
+        FastAPI->>VerifyRoute: verify_pdf(file) / verify_pdf_url(url)
+        alt PDF file upload
+            VerifyRoute->>VerifyRoute: _save_upload() → TEMP_DIR/<uuid>.pdf
+        else PDF URL
+            VerifyRoute->>VerifyRoute: requests.get(url, stream=True) → TEMP_DIR/<uuid>.pdf
+        end
+        VerifyRoute->>PyMuPDF: extract_pdf(path)
+        PyMuPDF->>PyMuPDF: pymupdf.open(path)
+        PyMuPDF->>PyMuPDF: page.get_text() per page
+        PyMuPDF-->>VerifyRoute: {text, page_count, pages:[{page,text}]}
+        VerifyRoute->>VerifyRoute: Check text non-empty (422 + Tesseract hint if blank)
+        VerifyRoute->>ClaimExtractor: extract_claims(extracted.text)
+        ClaimExtractor->>GeminiClient: call_json(..., json_object=True)
+        GeminiClient->>GeminiAPI: generate_content (structured JSON)
+        GeminiAPI-->>GeminiClient: {claims:[...]}
+        GeminiClient-->>ClaimExtractor: (dict, [])
+        ClaimExtractor-->>VerifyRoute: List[Claim]
+        VerifyRoute->>Verifier: verify_claims(claims)
+        loop Each batch of 4 claims
+            Verifier->>GeminiClient: call_json(..., enable_web_search=True)
+            GeminiClient->>GeminiAPI: generate_content (Google Search grounded)
+            GeminiAPI-->>GeminiClient: results + sources
+            GeminiClient-->>Verifier: (results, sources)
+        end
+        Verifier-->>VerifyRoute: Report
+        VerifyRoute->>Mapping: attach_pages(report.claims, pages)
+        Mapping->>Mapping: Fuzzy-match source_snippet → page text
+        Mapping->>Mapping: score ≥ 0.20 → set result.page
+        Mapping-->>VerifyRoute: results (modified in-place)
+        VerifyRoute->>VerifyRoute: Delete temp file (finally)
+        VerifyRoute-->>FastAPI: report + {pages, page_count, input_type:"pdf"}
+        FastAPI-->>VerifyPage: JSON response
+        VerifyPage->>Browser: sessionStorage → results.html
+        ResultsPage->>ResultsPage: Render claims with page numbers (no video player)
+        ResultsPage-->>User: PDF verification report displayed
+    end
+
+    %% ── GEMINI RETRY LOGIC ──
+    rect rgb(245, 245, 245)
+        Note over GeminiClient,GeminiAPI: GEMINI RETRY LOGIC (all Gemini calls)
+        GeminiClient->>GeminiAPI: generate_content(model, contents, config)
+        alt Success
+            GeminiAPI-->>GeminiClient: Response text
+            GeminiClient->>GeminiClient: _extract_json(text) → dict
+        else Rate-limit / transient error
+            GeminiAPI-->>GeminiClient: Error (e.g. 429 with retryDelay)
+            GeminiClient->>GeminiClient: Parse retryDelay from error text
+            GeminiClient->>GeminiClient: time.sleep(delay)
+            GeminiClient->>GeminiAPI: Retry (up to MAX_RETRIES times)
+        end
+    end
+
+    %% ── LOGOUT FLOW ──
+    rect rgb(255, 235, 235)
+        Note over User,Auth0: LOGOUT FLOW
+        User->>Browser: Click account menu button in sidebar
+        Browser->>User: confirm("Log out of FactLens AI?")
+        User->>Browser: Confirm
+        Browser->>Auth0: client.logout({returnTo: login.html})
+        Auth0-->>Browser: Redirect to login.html
+        Browser->>Browser: sessionStorage.removeItem("factlensReturnTo")
+        Browser-->>User: login.html shown
+    end

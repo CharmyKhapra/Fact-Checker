@@ -1,0 +1,160 @@
+
+<div class="app-shell">
+<!-- ===================== SIDEBAR ===================== -->
+<aside class="sidebar">
+<div class="brand">
+<div class="brand-mark">
+<svg fill="none" viewbox="0 0 24 24"><path d="M12 2L4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" fill="#fff" opacity="0.95"></path><path d="M9 12l2 2 4-4.5" stroke="#5B5FEF" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
+</div>
+<div class="brand-text">
+<div class="name">FactLens AI</div>
+<div class="tagline">Verify. Trust. Know.</div>
+</div>
+</div>
+<nav class="nav-group">
+<a class="nav-link" data-nav="dashboard" href="index.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg>
+        Dashboard
+      </a>
+<a class="nav-link" data-nav="verify" href="verify.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 12.3l2.2 2.2 4.8-4.9"></path></svg>
+        Verify
+      </a>
+<a class="nav-link" data-nav="history" href="history.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>
+        History
+      </a>
+<a class="nav-link" data-nav="reports" href="reports.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h6M9 16h6M9 8h2"></path></svg>
+        Saved Reports
+      </a>
+<a class="nav-link" data-nav="sources" href="sources.html">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><rect height="16" rx="2" width="16" x="4" y="4"></rect><path d="M8 9h8M8 13h8M8 17h5"></path></svg>
+        Sources
+      </a>
+</nav>
+<div class="nav-spacer"></div>
+<div class="sidebar-footer">
+<div class="avatar">AV</div>
+<div class="user-meta">
+<div class="u-name">Arjun Verma</div>
+<div class="u-email">arjun@example.com</div>
+</div>
+<button aria-label="Account menu" title="Account menu">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24" width="16"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+</div>
+</aside>
+<!-- ===================== MAIN ===================== -->
+<div class="main">
+<header class="topbar">
+<div>
+<div class="page-title">Verify content</div>
+<div class="page-subtitle">Submit a video, PDF, or plain text and FactLens AI will check every claim against trusted sources.</div>
+</div>
+</header>
+<main class="content">
+<!-- Method selector -->
+<section class="card card-pad mb-16">
+<div class="section-title mb-12">What are you verifying?</div>
+<div class="method-grid" id="methodGrid">
+<button class="method-card active" data-method="video">
+<div class="mc-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><rect height="12" rx="2" width="13" x="3" y="6"></rect><path d="M16 10l5-3v10l-5-3"></path></svg></div>
+<div class="mc-title">Video / Reel</div>
+<div class="mc-sub">Upload a file or paste a link</div>
+</button>
+<button class="method-card" data-method="pdf">
+<div class="mc-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 13h6M9 17h4"></path></svg></div>
+<div class="mc-title">PDF document</div>
+<div class="mc-sub">Typed or scanned, file or link</div>
+</button>
+<button class="method-card" data-method="text">
+<div class="mc-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"></path></svg></div>
+<div class="mc-title">Plain text</div>
+<div class="mc-sub">Paste any sentence or paragraph</div>
+</button>
+
+</div>
+</section>
+<!-- Panels -->
+<section class="card card-pad">
+<!-- VIDEO PANEL -->
+<div class="panel active" id="panel-video">
+<div class="flex justify-between items-center mb-12">
+<div>
+<div class="section-title">Video or reel</div>
+<div class="section-sub">MP4, MOV, or a link from YouTube, Instagram, or X. Max 500MB / 30 min.</div>
+</div>
+</div>
+<div class="subtoggle" data-toggle="video-source">
+<button class="active" data-value="file">Upload from device</button>
+<button data-value="url">Paste URL</button>
+</div>
+<div data-panel-source="video-file">
+<div class="dropzone" id="dz-video">
+<div class="dz-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M12 16V4M12 4l-4 4M12 4l4 4"></path><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"></path></svg></div>
+<div class="dz-title">Drop your video here, or click to browse</div>
+<div class="dz-sub">Supports MP4, MOV, WEBM · up to 500MB</div>
+<input accept="video/*" id="file-video" type="file"/>
+</div>
+<div id="chip-video"></div>
+</div>
+<div class="hidden" data-panel-source="video-url">
+<label class="field-label">Video URL</label>
+<div class="input-icon-wrap">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 15l6-6"></path><path d="M13 6l1-1a3.5 3.5 0 015 5l-2 2M11 18l-1 1a3.5 3.5 0 01-5-5l2-2"></path></svg>
+<input class="input" placeholder="https://youtube.com/watch?v=..." type="url"/>
+</div>
+</div>
+</div>
+<!-- PDF PANEL -->
+<div class="panel" id="panel-pdf">
+<div class="flex justify-between items-center mb-12">
+<div>
+<div class="section-title">PDF document</div>
+<div class="section-sub">Typed or handwritten/scanned PDFs both work — scanned pages are read with OCR.</div>
+</div>
+</div>
+<div class="subtoggle" data-toggle="pdf-source">
+<button class="active" data-value="file">Upload from device</button>
+<button data-value="url">Paste URL</button>
+</div>
+<div data-panel-source="pdf-file">
+<div class="dropzone" id="dz-pdf">
+<div class="dz-icon"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 13h6M9 17h4"></path></svg></div>
+<div class="dz-title">Drop your PDF here, or click to browse</div>
+<div class="dz-sub">Typed or scanned · up to 50MB</div>
+<input accept="application/pdf" id="file-pdf" type="file"/>
+</div>
+<div id="chip-pdf"></div>
+</div>
+<div class="hidden" data-panel-source="pdf-url">
+<label class="field-label">PDF URL</label>
+<div class="input-icon-wrap">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 15l6-6"></path><path d="M13 6l1-1a3.5 3.5 0 015 5l-2 2M11 18l-1 1a3.5 3.5 0 01-5-5l2-2"></path></svg>
+<input class="input" placeholder="https://example.com/report.pdf" type="url"/>
+</div>
+</div>
+</div>
+<!-- TEXT PANEL -->
+<div class="panel" id="panel-text">
+<div class="section-title mb-4">Plain text</div>
+<div class="section-sub mb-12">Paste a sentence, paragraph, or claim you found somewhere and want checked.</div>
+<label class="field-label">Text to verify</label>
+<textarea class="input" placeholder="e.g. Climate change stopped in 1998..." rows="7"></textarea>
+<div class="text-sm text-muted mt-8" id="charCount">0 characters</div>
+</div>
+<hr class="divider"/>
+<div class="flex justify-between items-center">
+<div class="text-sm text-muted">By continuing you agree this content is yours to submit or is publicly available.</div>
+<a class="btn btn-primary" href="results.html">
+<svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+            Verify now
+          </a>
+</div>
+</section>
+</main>
+</div>
+</div>
+
+

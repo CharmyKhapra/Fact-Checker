@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fff; font-family: 'Segoe UI', Arial, sans-serif; }
+
+  svg { display: block; }
+
+  /* ── Groups (swimlanes) ── */
+  .lane-bg       { rx: 12; ry: 12; }
+  .lane-label    { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+
+  /* ── Nodes ── */
+  .node rect     { rx: 8; ry: 8; }
+  .node text     { font-size: 11.5px; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+  .node .title   { font-size: 12px; font-weight: 700; }
+  .node .sub     { font-size: 10.5px; fill: #555; }
+
+  /* ── Edges ── */
+  .edge          { fill: none; stroke-width: 1.6; }
+  .edge-label    { font-size: 10px; fill: #555; }
+  marker path    { }
+</style>
+</head>
+<body>
+<canvas id="c" style="display:none"></canvas>
+<div id="root"></div>
+<script>
+// ─────────────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────────────
+const W = 1600, H = 1220;
+const NW = 148, NH = 54;   // default node width / height
+
+const LANES = [
+  { id:'auth',    label:'🔐  Auth0  (External SaaS)',       x:20,   y:20,   w:220,  h:120,  fill:'#ecfdf5', stroke:'#059669' },
+  { id:'browser', label:'🌐  Browser  —  HTML / JS  (no build step)', x:20,   y:160,  w:480,  h:560,  fill:'#fffbeb', stroke:'#d97706' },
+  { id:'backend', label:'⚙️  FastAPI Server  (Python · port 8000)',   x:520,  y:20,   w:720,  h:900,  fill:'#fafafa',  stroke:'#6b7280' },
+  { id:'ml',      label:'🖥️  Local ML  (no network)',        x:20,   y:740,  w:480,  h:200,  fill:'#fdf4ff', stroke:'#a21caf' },
+  { id:'gemini',  label:'☁️  Google Gemini API  (External)', x:1260, y:20,   w:320,  h:900,  fill:'#fff1f2', stroke:'#e11d48' },
+];
+
+// nodes: id, lane, label (array of lines), x, y, w?, h?, color, textColor
+const NODES = [
+  // ── Auth0 ──
+  { id:'a0',        lane:'auth',    label:['Universal Login','+ Token Issuer'],
+    x:80, y:60, fill:'#d1fae5', stroke:'#059669', tc:'#064e3b' },
+
+  // ── Browser: Pages ──
+  { id:'pg_login',  lane:'browser', label:['login.html'],
+    x:40,  y:60,  w:110, h:44, fill:'#dbeafe', stroke:'#3b82f6', tc:'#1e3a8a' },
+  { id:'pg_index',  lane:'browser', label:['index.html','Dashboard'],
+    x:165, y:60,  w:110, h:44, fill:'#dbeafe', stroke:'#3b82f6', tc:'#1e3a8a' },
+  { id:'pg_verify', lane:'browser', label:['verify.html','Submit job'],
+    x:290, y:60,  w:110, h:44, fill:'#dbeafe', stroke:'#3b82f6', tc:'#1e3a8a' },
+  { id:'pg_results',lane:'browser', label:['results.html','Report viewer'],
+    x:40,  y:130, w:110, h:44, fill:'#dbeafe', stroke:'#3b82f6', tc:'#1e3a8a' },
+  { id:'pg_other',  lane:'browser', label:['history · reports','sources (demo)'],
+    x:165, y:130, w:235, h:44, fill:'#dbeafe', stroke:'#3b82f6', tc:'#1e3a8a' },
+
+  // ── Browser: JS ──
+  { id:'js_session',lane:'browser', label:['flens-session.js','Auth guard · sidebar · logout'],
+    x:55,  y:230, w:165, h:50, fill:'#e0f2fe', stroke:'#0284c7', tc:'#0c4a6e' },
+  { id:'js_config', lane:'browser', label:['flens-config.js','Auth0 credentials'],
+    x:250, y:230, w:155, h:50, fill:'#e0f2fe', stroke:'#0284c7', tc:'#0c4a6e' },
+  { id:'js_app',    lane:'browser', label:['app.js','dropzone · tabs · search'],
+    x:55,  y:310, w:165, h:50, fill:'#e0f2fe', stroke:'#0284c7', tc:'#0c4a6e' },
+
+  // ── Browser: Storage ──
+  { id:'ss',        lane:'browser', label:['sessionStorage','factlensResult'],
+    x:55,  y:400, w:155, h:50, fill:'#dcfce7', stroke:'#16a34a', tc:'#14532d' },
+  { id:'ls',        lane:'browser', label:['localStorage','Auth0 tokens'],
+    x:255, y:400, w:155, h:50, fill:'#dcfce7', stroke:'#16a34a', tc:'#14532d' },
+
+  // ── Browser: API call indicators ──
+  { id:'api_call',  lane:'browser', label:['POST /api/verify/*','FormData / multipart'],
+    x:100, y:490, w:270, h:44, fill:'#fef9c3', stroke:'#ca8a04', tc:'#713f12' },
+  { id:'media_get', lane:'browser', label:['GET /media/<uuid>.mp4'],
+    x:100, y:555, w:270, h:44, fill:'#fef9c3', stroke:'#ca8a04', tc:'#713f12' },
+
+  // ── Backend: main.py ──
+  { id:'main',      lane:'backend', label:['main.py','CORS · /media · /api · static'],
+    x:260, y:40,  w:200, h:50, fill:'#f3f4f6', stroke:'#6b7280', tc:'#111827' },
+
+  // ── Backend: Routes ──
+  { id:'routes',    lane:'backend', label:['routes/verify.py','POST /text · /video · /video-url','/pdf · /pdf-url · /health'],
+    x:80,  y:140, w:220, h:60, fill:'#fef9c3', stroke:'#ca8a04', tc:'#713f12' },
+
+  // ── Backend: config ──
+  { id:'cfg',       lane:'backend', label:['config.py','GEMINI_MODEL · API_KEY','WHISPER_MODEL · DEVICE · limits'],
+    x:380, y:140, w:200, h:60, fill:'#f5f3ff', stroke:'#7c3aed', tc:'#3b0764' },
+
+  // ── Backend: App layer ──
+  { id:'extractor', lane:'backend', label:['claim_extractor.py','Structured JSON prompt','max 20 claims'],
+    x:40,  y:280, w:175, h:60, fill:'#ffedd5', stroke:'#ea580c', tc:'#7c2d12' },
+  { id:'verifier',  lane:'backend', label:['verifier.py','Batch size = 4','score · summary · warnings'],
+    x:240, y:280, w:175, h:60, fill:'#ffedd5', stroke:'#ea580c', tc:'#7c2d12' },
+  { id:'gem_cli',   lane:'backend', label:['gemini_client.py','call_json()  _extract_json()','_grounding_sources()  retry'],
+    x:450, y:280, w:195, h:60, fill:'#ffedd5', stroke:'#ea580c', tc:'#7c2d12' },
+  { id:'models',    lane:'backend', label:['models.py','Claim · VerificationResult','Report · Verdict · Source'],
+    x:450, y:160, w:195, h:60, fill:'#fde68a', stroke:'#d97706', tc:'#78350f' },
+
+  // ── Backend: Services ──
+  { id:'trans',     lane:'backend', label:['transcriber.py','transcribe_video()','SRT as canonical format'],
+    x:40,  y:450, w:175, h:60, fill:'#fff7ed', stroke:'#f97316', tc:'#7c2d12' },
+  { id:'srt',       lane:'backend', label:['srt_utils.py','segments_to_srt()','parse_srt()  write_srt()'],
+    x:40,  y:560, w:175, h:60, fill:'#fff7ed', stroke:'#f97316', tc:'#7c2d12' },
+  { id:'pdfex',     lane:'backend', label:['pdf_extractor.py','extract_pdf()','per-page text'],
+    x:240, y:450, w:175, h:60, fill:'#fff7ed', stroke:'#f97316', tc:'#7c2d12' },
+  { id:'mapping',   lane:'backend', label:['mapping.py','attach_timestamps()','attach_pages()  fuzzy match'],
+    x:450, y:450, w:195, h:60, fill:'#fff7ed', stroke:'#f97316', tc:'#7c2d12' },
+
+  // ── Backend: File system ──
+  { id:'fs_temp',   lane:'backend', label:['backend/temp/','upload staging'],
+    x:40,  y:680, w:155, h:50, fill:'#f0fdf4', stroke:'#15803d', tc:'#14532d' },
+  { id:'fs_media',  lane:'backend', label:['backend/media/','videos → /media/'],
+    x:220, y:680, w:155, h:50, fill:'#f0fdf4', stroke:'#15803d', tc:'#14532d' },
+  { id:'fs_out',    lane:'backend', label:['backend/outputs/','SRT files'],
+    x:400, y:680, w:155, h:50, fill:'#f0fdf4', stroke:'#15803d', tc:'#14532d' },
+
+  // ── Local ML ──
+  { id:'whisper',   lane:'ml',      label:['Faster-Whisper','large-v3-turbo · CPU · int8','VAD filter · beam_size=5'],
+    x:30,  y:70,  w:170, h:60, fill:'#fdf4ff', stroke:'#a21caf', tc:'#4a044e' },
+  { id:'pymupdf',   lane:'ml',      label:['PyMuPDF','page.get_text()','typed PDF text extraction'],
+    x:225, y:70,  w:170, h:60, fill:'#fdf4ff', stroke:'#a21caf', tc:'#4a044e' },
+  { id:'ytdlp',     lane:'ml',      label:['yt-dlp','YouTube · TikTok','Instagram · X · Vimeo'],
+    x:420, y:70,  w:170, h:60, fill:'#fdf4ff', stroke:'#a21caf', tc:'#4a044e' },
+
+  // ── Gemini ──
+  { id:'g_json',    lane:'gemini',  label:['Structured JSON mode','response_mime_type=json','+ response_schema','→ Claim Extraction'],
+    x:40,  y:160, w:240, h:70, fill:'#ffe4e6', stroke:'#e11d48', tc:'#881337' },
+  { id:'g_web',     lane:'gemini',  label:['Google Search grounded','tools=[GoogleSearch()]','live web evidence','→ Claim Verification'],
+    x:40,  y:310, w:240, h:70, fill:'#ffe4e6', stroke:'#e11d48', tc:'#881337' },
+];
+
+// edges: from, to, label?, color?, dashed?
+const EDGES = [
+  // Auth
+  { f:'js_session', t:'a0',        label:'isAuthenticated\ngetUser\nloginWithRedirect', color:'#059669' },
+  { f:'a0',         t:'pg_login',  label:'redirect+code', color:'#059669' },
+  { f:'js_session', t:'ls',        color:'#0284c7' },
+  { f:'js_config',  t:'js_session',color:'#0284c7' },
+
+  // Page → JS
+  { f:'pg_login',   t:'js_session',color:'#3b82f6' },
+  { f:'pg_verify',  t:'js_session',color:'#3b82f6' },
+  { f:'pg_verify',  t:'js_app',    color:'#3b82f6' },
+  { f:'pg_verify',  t:'ss',        color:'#16a34a' },
+  { f:'pg_results', t:'ss',        label:'read result', color:'#16a34a' },
+
+  // Browser → Backend
+  { f:'api_call',   t:'routes',    label:'POST FormData', color:'#ca8a04' },
+  { f:'routes',     t:'api_call',  label:'JSON report',   color:'#6b7280', dashed:true },
+  { f:'media_get',  t:'fs_media',  label:'stream video',  color:'#15803d' },
+
+  // Backend internals
+  { f:'main',       t:'routes',    color:'#6b7280' },
+  { f:'main',       t:'cfg',       color:'#7c3aed', dashed:true },
+
+  { f:'routes',     t:'extractor', color:'#ea580c' },
+  { f:'routes',     t:'trans',     color:'#f97316' },
+  { f:'routes',     t:'pdfex',     color:'#f97316' },
+  { f:'routes',     t:'fs_temp',   label:'save upload', color:'#15803d' },
+  { f:'routes',     t:'fs_media',  label:'persist video', color:'#15803d' },
+
+  { f:'extractor',  t:'verifier',  color:'#ea580c' },
+  { f:'extractor',  t:'gem_cli',   color:'#ea580c' },
+  { f:'verifier',   t:'gem_cli',   color:'#ea580c' },
+  { f:'verifier',   t:'mapping',   color:'#f97316' },
+
+  { f:'models',     t:'extractor', label:'types', color:'#d97706', dashed:true },
+  { f:'models',     t:'verifier',  label:'types', color:'#d97706', dashed:true },
+
+  { f:'trans',      t:'srt',       color:'#f97316' },
+  { f:'trans',      t:'whisper',   color:'#a21caf' },
+  { f:'srt',        t:'fs_out',    label:'write .srt', color:'#15803d' },
+  { f:'pdfex',      t:'pymupdf',   color:'#a21caf' },
+  { f:'fs_temp',    t:'trans',     color:'#f97316', dashed:true },
+  { f:'fs_temp',    t:'pdfex',     color:'#f97316', dashed:true },
+
+  // yt-dlp
+  { f:'ytdlp',      t:'trans',     label:'downloaded MP4', color:'#a21caf' },
+
+  // Gemini
+  { f:'gem_cli',    t:'g_json',    label:'json_object=True',     color:'#e11d48' },
+  { f:'gem_cli',    t:'g_web',     label:'enable_web_search=True',color:'#e11d48' },
+  { f:'g_json',     t:'gem_cli',   label:'structured dict',      color:'#e11d48', dashed:true },
+  { f:'g_web',      t:'gem_cli',   label:'results+sources',      color:'#e11d48', dashed:true },
+];
+
+// ─────────────────────────────────────────────────────────────
+// RESOLVE absolute positions
+// ─────────────────────────────────────────────────────────────
+const laneMap = {};
+LANES.forEach(l => laneMap[l.id] = l);
+const nodeMap = {};
+NODES.forEach(n => {
+  const lane = laneMap[n.lane];
+  n.ax = lane.x + n.x;
+  n.ay = lane.y + n.y + 30; // 30px for lane label
+  n.w  = n.w || NW;
+  n.h  = n.h || NH;
+  n.cx = n.ax + n.w / 2;
+  n.cy = n.ay + n.h / 2;
+  nodeMap[n.id] = n;
+});
+
+// ─────────────────────────────────────────────────────────────
+// DRAW
+// ─────────────────────────────────────────────────────────────
+const ns = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(ns, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(str, attrs, parent) {
+  const e = el('text', attrs, parent);
+  e.textContent = str;
+  return e;
+}
+
+const svg = el('svg', { width: W, height: H, xmlns: ns });
+document.getElementById('root').appendChild(svg);
+
+// defs — arrowheads
+const defs = el('defs', {}, svg);
+const colors = [...new Set(EDGES.map(e=>e.color||'#6b7280'))];
+colors.forEach(c => {
+  const cid = 'arr' + c.replace('#','');
+  const marker = el('marker', { id:cid, markerWidth:8, markerHeight:8, refX:7, refY:3, orient:'auto' }, defs);
+  el('path', { d:'M0,0 L0,6 L8,3 z', fill:c }, marker);
+
+  const cid2 = 'arrd' + c.replace('#','');
+  const marker2 = el('marker', { id:cid2, markerWidth:8, markerHeight:8, refX:7, refY:3, orient:'auto' }, defs);
+  el('path', { d:'M0,0 L0,6 L8,3 z', fill:c }, marker2);
+});
+
+// Lane backgrounds
+LANES.forEach(l => {
+  el('rect', { x:l.x, y:l.y, width:l.w, height:l.h, fill:l.fill, stroke:l.stroke, 'stroke-width':2, rx:12 }, svg);
+  txt(l.label, { x:l.x+14, y:l.y+18, 'font-size':'12', 'font-weight':'700', fill:l.stroke,
+    'font-family':'Segoe UI,Arial,sans-serif' }, svg);
+});
+
+// ── Edge helper: simple orthogonal path between two nodes ──
+function edgePath(fn, tn) {
+  const f = nodeMap[fn], t = nodeMap[tn];
+  if (!f || !t) return '';
+  // Determine exit/entry sides based on relative position
+  const dx = t.cx - f.cx, dy = t.cy - f.cy;
+  let x1,y1,x2,y2;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // horizontal
+    if (dx > 0) { x1=f.ax+f.w; y1=f.cy; x2=t.ax; y2=t.cy; }
+    else         { x1=f.ax;     y1=f.cy; x2=t.ax+t.w; y2=t.cy; }
+  } else {
+    // vertical
+    if (dy > 0) { x1=f.cx; y1=f.ay+f.h; x2=t.cx; y2=t.ay; }
+    else         { x1=f.cx; y1=f.ay;     x2=t.cx; y2=t.ay+t.h; }
+  }
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  // Simple cubic bezier
+  return `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+}
+
+// Edges
+const edgeG = el('g', {}, svg);
+const labelG = el('g', {}, svg);
+EDGES.forEach(e => {
+  const c = e.color || '#6b7280';
+  const cid = (e.dashed ? 'arrd' : 'arr') + c.replace('#','');
+  const d = edgePath(e.f, e.t);
+  if (!d) return;
+  const path = el('path', {
+    d, class:'edge', stroke:c,
+    'stroke-dasharray': e.dashed ? '5,4' : 'none',
+    'marker-end': `url(#${cid})`
+  }, edgeG);
+
+  if (e.label) {
+    // Find midpoint
+    const f = nodeMap[e.f], t = nodeMap[e.t];
+    if (!f||!t) return;
+    const mx = (f.cx + t.cx) / 2;
+    const my = (f.cy + t.cy) / 2;
+    const lines = e.label.split('\n');
+    lines.forEach((line, i) => {
+      txt(line, {
+        x: mx, y: my + i*13 - (lines.length-1)*6.5,
+        'font-size':'9.5', fill:c,
+        'font-family':'Segoe UI,Arial,sans-serif',
+        'text-anchor':'middle',
+        'paint-order':'stroke',
+        stroke:'#fff', 'stroke-width':'3'
+      }, labelG);
+    });
+  }
+});
+
+// Nodes
+NODES.forEach(n => {
+  const g = el('g', { class:'node' }, svg);
+  el('rect', { x:n.ax, y:n.ay, width:n.w, height:n.h,
+    fill:n.fill, stroke:n.stroke, 'stroke-width':1.8, rx:8 }, g);
+
+  const lines = n.label;
+  const lineH = 14;
+  const totalH = lines.length * lineH;
+  const startY = n.cy - totalH/2 + 7;
+  lines.forEach((line, i) => {
+    txt(line, {
+      x: n.cx, y: startY + i*lineH,
+      'font-size': i===0 ? '11' : '10',
+      'font-weight': i===0 ? '700' : '400',
+      fill: n.tc || '#111',
+      'font-family':'Segoe UI,Arial,sans-serif',
+      'text-anchor':'middle',
+      'dominant-baseline':'middle'
+    }, g);
+  });
+});
+
+// ── Legend ──
+const LX = 1260, LY = 740;
+el('rect',{x:LX,y:LY,width:320,height:220,fill:'#f9fafb',stroke:'#d1d5db','stroke-width':1.5,rx:10},svg);
+txt('Legend', {x:LX+14,y:LY+18,'font-size':'12','font-weight':'700',fill:'#374151','font-family':'Segoe UI,Arial,sans-serif'},svg);
+
+const legendItems = [
+  { color:'#3b82f6', label:'Frontend Pages',      fill:'#dbeafe' },
+  { color:'#0284c7', label:'Shared JS modules',   fill:'#e0f2fe' },
+  { color:'#16a34a', label:'Browser storage',     fill:'#dcfce7' },
+  { color:'#ca8a04', label:'API routes / calls',  fill:'#fef9c3' },
+  { color:'#ea580c', label:'App layer (Python)',   fill:'#ffedd5' },
+  { color:'#f97316', label:'Services (Python)',    fill:'#fff7ed' },
+  { color:'#d97706', label:'Data models',          fill:'#fde68a' },
+  { color:'#15803d', label:'File system',          fill:'#f0fdf4' },
+  { color:'#7c3aed', label:'Config',              fill:'#f5f3ff' },
+  { color:'#a21caf', label:'Local ML / tools',    fill:'#fdf4ff' },
+  { color:'#e11d48', label:'Gemini API (cloud)',   fill:'#ffe4e6' },
+  { color:'#059669', label:'Auth0 (cloud)',        fill:'#d1fae5' },
+];
+
+legendItems.forEach((item, i) => {
+  const lx = LX+14 + (i<6?0:160);
+  const ly = LY+36 + (i%6)*28;
+  el('rect',{x:lx,y:ly,width:16,height:16,fill:item.fill,stroke:item.color,'stroke-width':1.5,rx:4},svg);
+  txt(item.label,{x:lx+22,y:ly+8,'font-size':'10.5',fill:'#374151','font-family':'Segoe UI,Arial,sans-serif','dominant-baseline':'middle'},svg);
+});
+</script>
+</body>
+</html>

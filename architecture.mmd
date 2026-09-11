@@ -1,0 +1,167 @@
+graph TD
+
+    %% ─── EXTERNAL AUTH ───────────────────────────────────────────
+    subgraph EXT_AUTH["🔐 Auth0  (External)"]
+        A0["Universal Login\n+ Token Issuer"]
+    end
+
+    %% ─── BROWSER ─────────────────────────────────────────────────
+    subgraph BROWSER["🌐 Browser  —  Plain HTML / JS  (no build step)"]
+        direction TB
+
+        subgraph PAGES["Pages"]
+            direction LR
+            PG_LOGIN["login.html"]
+            PG_INDEX["index.html\nDashboard"]
+            PG_VERIFY["verify.html\nSubmit job"]
+            PG_RESULTS["results.html\nReport viewer"]
+            PG_OTHER["history · reports\nsources (static demo)"]
+        end
+
+        subgraph JS["Shared JS"]
+            direction LR
+            JS_SESSION["flens-session.js\nAuth guard · sidebar · logout"]
+            JS_CONFIG["flens-config.js\nAuth0 credentials"]
+            JS_APP["app.js\ndropzone · tabs · search"]
+        end
+
+        subgraph STORAGE["Browser Storage"]
+            direction LR
+            SS[("sessionStorage\nfactlensResult\nfactlensReturnTo")]
+            LS[("localStorage\nAuth0 tokens")]
+        end
+    end
+
+    %% ─── FASTAPI ─────────────────────────────────────────────────
+    subgraph BACKEND["⚙️ FastAPI Server  —  Python  (port 8000)"]
+        direction TB
+
+        MAIN["main.py\nCORS · static mounts\n/media · /api/verify · /video"]
+
+        subgraph ROUTES["API Routes  (routes/verify.py)"]
+            direction LR
+            RT["POST /text\nPOST /video\nPOST /video-url\nPOST /pdf\nPOST /pdf-url"]
+        end
+
+        subgraph APP["App Layer  (app/)"]
+            direction LR
+            EXTRACT["claim_extractor.py\nStructured JSON prompt\nmax 20 claims"]
+            VERIFY_MOD["verifier.py\nBatch size = 4\nscore · summary · warnings"]
+            GEM_CLI["gemini_client.py\ncall_json()\n_extract_json()\n_grounding_sources()\nRetry + backoff"]
+            MODELS_PY["models.py\nClaim · VerificationResult\nReport · Verdict · Source"]
+        end
+
+        subgraph SVC["Services  (services/)"]
+            direction LR
+            TRANS["transcriber.py\ntranscribe_video()\nSRT as canonical format"]
+            SRT["srt_utils.py\nsegments_to_srt()\nparse_srt()"]
+            PDFEX["pdf_extractor.py\nextract_pdf()\nper-page text"]
+            MAP["mapping.py\nattach_timestamps()\nattach_pages()\nSequenceMatcher fuzzy"]
+        end
+
+        subgraph FS["File System"]
+            direction LR
+            TEMP["backend/temp/\nupload staging"]
+            MEDIA["backend/media/\npersisted videos\nserved at /media/"]
+            OUT["backend/outputs/\nSRT files"]
+        end
+
+        CFG["config.py\nGEMINI_MODEL · API_KEY\nWHISPER_MODEL · DEVICE\nMAX_* limits · BATCH_SIZE"]
+    end
+
+    %% ─── LOCAL ML ────────────────────────────────────────────────
+    subgraph LOCAL_ML["🖥️ Local ML  (no network call)"]
+        direction LR
+        WHISPER["Faster-Whisper\nlarge-v3-turbo\nCPU · int8 · VAD"]
+        PYMUPDF["PyMuPDF\npage.get_text()"]
+        YTDLP["yt-dlp\nYouTube · TikTok\nInstagram · X · Vimeo"]
+    end
+
+    %% ─── GEMINI ──────────────────────────────────────────────────
+    subgraph GEMINI["☁️ Google Gemini API  (External)"]
+        direction LR
+        G_JSON["Structured JSON mode\nresponse_mime_type=json\n→ Claim Extraction"]
+        G_WEB["Google Search grounded\ntools=[GoogleSearch()]\n→ Claim Verification"]
+    end
+
+    %% ══════════════════════════════════════════════════════════════
+    %% EDGES
+    %% ══════════════════════════════════════════════════════════════
+
+    %% Auth
+    JS_SESSION <-->|"isAuthenticated\ngetUser\nloginWithRedirect"| A0
+    A0 -->|"redirect + code"| PG_LOGIN
+    JS_SESSION <--> LS
+    JS_CONFIG --> JS_SESSION
+
+    %% Page wiring
+    PG_VERIFY --> JS_APP
+    PG_VERIFY <--> SS
+    PG_RESULTS <--> SS
+    PAGES --> JS_SESSION
+
+    %% Browser → Backend
+    PG_VERIFY -->|"POST FormData / multipart"| RT
+    RT -->|"JSON report"| PG_VERIFY
+    PG_RESULTS -->|"GET /media/uuid.mp4"| MEDIA
+
+    %% FastAPI internals
+    MAIN --> ROUTES
+    MAIN --> CFG
+    MAIN --> FS
+
+    RT --> EXTRACT
+    RT --> TRANS
+    RT --> YTDLP
+    RT --> PDFEX
+    RT --> TEMP
+
+    EXTRACT --> GEM_CLI
+    VERIFY_MOD --> GEM_CLI
+    EXTRACT --> VERIFY_MOD
+    VERIFY_MOD --> MAP
+    TRANS --> SRT
+    TRANS --> WHISPER
+    PDFEX --> PYMUPDF
+    YTDLP -->|"downloaded MP4"| TRANS
+    TEMP --> TRANS
+    TEMP --> PDFEX
+    SRT --> OUT
+    TRANS --> OUT
+    RT --> MEDIA
+
+    MODELS_PY -.->|type definitions| EXTRACT
+    MODELS_PY -.->|type definitions| VERIFY_MOD
+
+    %% Gemini
+    GEM_CLI -->|"json_object=True"| G_JSON
+    GEM_CLI -->|"enable_web_search=True"| G_WEB
+    G_JSON -->|"structured dict"| GEM_CLI
+    G_WEB -->|"results + grounding URLs"| GEM_CLI
+
+    %% ══════════════════════════════════════════════════════════════
+    %% STYLES
+    %% ══════════════════════════════════════════════════════════════
+    classDef page     fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a,rx:6
+    classDef jsmod    fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e,rx:6
+    classDef store    fill:#dcfce7,stroke:#16a34a,color:#14532d,rx:6
+    classDef route    fill:#fef9c3,stroke:#ca8a04,color:#713f12,rx:6
+    classDef appmod   fill:#ffedd5,stroke:#ea580c,color:#7c2d12,rx:6
+    classDef svcmod   fill:#fff7ed,stroke:#f97316,color:#7c2d12,rx:6
+    classDef fsnode   fill:#f0fdf4,stroke:#15803d,color:#14532d,rx:6
+    classDef cfgnode  fill:#f5f3ff,stroke:#7c3aed,color:#3b0764,rx:6
+    classDef mlnode   fill:#fdf4ff,stroke:#a21caf,color:#4a044e,rx:6
+    classDef gcloud   fill:#ffe4e6,stroke:#e11d48,color:#881337,rx:6
+    classDef authnode fill:#ecfdf5,stroke:#059669,color:#064e3b,rx:6
+
+    class PG_LOGIN,PG_INDEX,PG_VERIFY,PG_RESULTS,PG_OTHER page
+    class JS_SESSION,JS_CONFIG,JS_APP jsmod
+    class SS,LS store
+    class RT route
+    class EXTRACT,VERIFY_MOD,GEM_CLI,MODELS_PY appmod
+    class TRANS,SRT,PDFEX,MAP svcmod
+    class TEMP,MEDIA,OUT fsnode
+    class CFG cfgnode
+    class WHISPER,PYMUPDF,YTDLP mlnode
+    class G_JSON,G_WEB gcloud
+    class A0 authnode

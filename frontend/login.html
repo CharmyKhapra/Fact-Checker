@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Log in · FactLens AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<style>
+  html{ visibility:hidden; }
+  body.login-body{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(1200px 600px at 50% -10%, var(--indigo-50), var(--bg,#F7F7FB) 60%);
+    padding:24px;
+  }
+  .login-card{ width:100%; max-width:380px; text-align:center; }
+  .login-brand{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-bottom:22px; }
+  .login-brand .brand-mark{
+    width:52px; height:52px; border-radius:14px;
+    background:linear-gradient(135deg, var(--indigo-500), #8B5CF6);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .login-brand .brand-mark svg{ width:28px; height:28px; }
+  .login-brand .name{ font-family:'Manrope',sans-serif; font-weight:800; font-size:20px; }
+  .login-brand .tagline{ font-size:13px; color:var(--text-500); }
+  .login-title{ font-size:17px; font-weight:700; margin-bottom:6px; }
+  .login-sub{ font-size:13.5px; color:var(--text-500); margin-bottom:22px; }
+  .login-btn{
+    width:100%; justify-content:center; padding:12px 16px; font-size:14.5px; gap:10px;
+  }
+  .login-note{ margin-top:16px; font-size:12px; color:var(--text-500); }
+  .login-error{
+    margin-top:16px; padding:10px 12px; border-radius:10px; font-size:12.5px;
+    background:var(--red-100); color:var(--red-600); text-align:left; display:none;
+  }
+  .login-spinner{ margin-top:16px; font-size:13px; color:var(--text-500); display:none; }
+</style>
+</head>
+<body class="login-body">
+
+  <div class="card card-pad login-card">
+    <div class="login-brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" fill="#fff" opacity="0.95"/><path d="M9 12l2 2 4-4.5" stroke="#5B5FEF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="name">FactLens AI</div>
+      <div class="tagline">Verify. Trust. Know.</div>
+    </div>
+
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Log in to start verifying videos, PDFs, and claims.</div>
+
+    <button class="btn btn-primary login-btn" id="loginBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+      Log in with Auth0
+    </button>
+
+    <div class="login-spinner" id="loginSpinner">Signing you in…</div>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-note">Protected by Auth0 · Single sign-on, no passwords stored here.</div>
+  </div>
+
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js"></script>
+  <script src="js/flens-config.js"></script>
+  <script>
+  (async () => {
+    document.documentElement.style.visibility = "visible";
+
+    const cfg = window.AUTH0_CONFIG || {};
+    const loginBtn = document.getElementById("loginBtn");
+    const errorEl = document.getElementById("loginError");
+    const spinnerEl = document.getElementById("loginSpinner");
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = "block";
+    }
+
+    const notConfigured = !cfg.domain || !cfg.clientId ||
+      cfg.domain === "YOUR_AUTH0_DOMAIN" || cfg.clientId === "YOUR_AUTH0_CLIENT_ID";
+    if (notConfigured) {
+      loginBtn.disabled = true;
+      loginBtn.style.opacity = ".6";
+      showError(
+        "Auth0 isn't configured yet. Add your domain and client ID to " +
+        "frontend/js/flens-config.js, then reload this page."
+      );
+      return;
+    }
+
+    const client = await auth0.createAuth0Client({
+      domain: cfg.domain,
+      clientId: cfg.clientId,
+      cacheLocation: "localstorage",
+      authorizationParams: {
+        redirect_uri: cfg.redirectUri || (window.location.origin + "/login.html"),
+        ...(cfg.audience ? { audience: cfg.audience } : {}),
+      },
+    });
+
+    function goHome() {
+      const returnTo = sessionStorage.getItem("factlensReturnTo");
+      sessionStorage.removeItem("factlensReturnTo");
+      window.location.replace(returnTo && returnTo !== "login.html" ? returnTo : "index.html");
+    }
+
+    const query = window.location.search;
+    try {
+      if (query.includes("code=") && query.includes("state=")) {
+        // Coming back from Auth0's Universal Login page.
+        // Guard against this same code/state pair being processed twice
+        // (e.g. a browser "preload pages" prefetch, or a page refresh hitting
+        // this exact callback URL again) — that produces a confusing
+        // "Invalid state" error because the code is single-use.
+        const params = new URLSearchParams(query);
+        const codeParam = params.get("code");
+        const alreadyHandled = sessionStorage.getItem("factlensHandledCode") === codeParam;
+
+        if (alreadyHandled) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          const isAuthenticated = await client.isAuthenticated();
+          if (isAuthenticated) { goHome(); return; }
+          showError(
+            "This login link was already used. Please click \u201cLog in with Auth0\u201d again."
+          );
+          loginBtn.style.display = "";
+          return;
+        }
+
+        spinnerEl.style.display = "block";
+        loginBtn.style.display = "none";
+        sessionStorage.setItem("factlensHandledCode", codeParam);
+        await client.handleRedirectCallback();
+        window.history.replaceState({}, document.title, window.location.pathname);
+        sessionStorage.removeItem("factlensHandledCode");
+        goHome();
+        return;
+      }
+      if (query.includes("error=")) {
+        const params = new URLSearchParams(query);
+        showError(params.get("error_description") || "Login failed. Please try again.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      const isAuthenticated = await client.isAuthenticated();
+      if (isAuthenticated) {
+        goHome();
+        return;
+      }
+    } catch (err) {
+      console.error("FactLens login error:", err);
+      sessionStorage.removeItem("factlensHandledCode");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      spinnerEl.style.display = "none";
+      loginBtn.style.display = "";
+      if (String(err.message || "").toLowerCase().includes("invalid state")) {
+        showError(
+          "Your login session expired before Auth0 could confirm it \u2014 this " +
+          "is usually caused by the browser preloading this page early. " +
+          "Please click \u201cLog in with Auth0\u201d again."
+        );
+      } else {
+        showError(err.message || "Something went wrong signing you in.");
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const returnTo = params.get("returnTo");
+
+    loginBtn.addEventListener("click", async () => {
+      loginBtn.disabled = true;
+      spinnerEl.style.display = "block";
+      try {
+        if (returnTo) sessionStorage.setItem("factlensReturnTo", returnTo);
+        await client.loginWithRedirect();
+      } catch (err) {
+        console.error("FactLens login error:", err);
+        showError(err.message || "Could not start login.");
+        loginBtn.disabled = false;
+        spinnerEl.style.display = "none";
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

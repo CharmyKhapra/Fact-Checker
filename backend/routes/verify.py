@@ -59,13 +59,69 @@ def verify_video_url(url:str=Form(...)):
         import yt_dlp
         import tempfile
         d=tempfile.mkdtemp(dir=config.TEMP_DIR)
-        opts={"outtmpl":str(Path(d)/"%(id)s.%(ext)s"),"format":"bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best","merge_output_format":"mp4","noplaylist":True}
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info=ydl.extract_info(url,download=True)
-            temp=Path(ydl.prepare_filename(info))
-            if not temp.exists():
-                candidates=list(Path(d).glob("*"))
-                temp=candidates[0] if candidates else None
+
+        # Locate an ffmpeg binary. Prefer one on the system PATH; if none is
+        # found, fall back to the portable binary bundled with the
+        # imageio-ffmpeg package (already a project dependency), so merging
+        # separate video/audio streams works without any manual install.
+        ffmpeg_path = shutil.which("ffmpeg")
+        if not ffmpeg_path:
+            try:
+                import imageio_ffmpeg
+                ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+            except Exception:
+                ffmpeg_path = None
+        has_ffmpeg = bool(ffmpeg_path)
+        if has_ffmpeg:
+            video_format = "bestvideo[ext=mp4]+bestaudio/best[ext=mp4]/best"
+        else:
+            print("[FactLens] ffmpeg not found; downloading a single progressive stream instead of merging.")
+            video_format = "best[ext=mp4]/best"
+
+        # YouTube's "web" client (the default) now requires deciphering a
+        # signature via a JS runtime, and yt-dlp's web/android-vr fallbacks
+        # can come back as HTTP 403. Extracting from the "android" and "ios"
+        # clients sidesteps that signature step entirely and is the
+        # currently-recommended workaround, so try them ahead of "web".
+        opts={
+            "outtmpl":str(Path(d)/"%(id)s.%(ext)s"),
+            "format":video_format,
+            "merge_output_format":"mp4",
+            "noplaylist":True,
+            "extractor_args":{"youtube":{"player_client":["android","ios","web"]}},
+        }
+        if ffmpeg_path:
+            opts["ffmpeg_location"] = ffmpeg_path
+
+        def _download(o):
+            with yt_dlp.YoutubeDL(o) as ydl:
+                info=ydl.extract_info(url,download=True)
+                t=Path(ydl.prepare_filename(info))
+                if not t.exists():
+                    candidates=list(Path(d).glob("*"))
+                    t=candidates[0] if candidates else None
+                return t
+
+        try:
+            temp=_download(opts)
+        except yt_dlp.utils.DownloadError as e:
+            msg=str(e)
+            if "ffmpeg is not installed" in msg:
+                # Safety net if the merge step still needs ffmpeg for some
+                # reason: retry once without needing it at all.
+                print("[FactLens] Merge failed despite ffmpeg check; retrying with progressive-only format.")
+                opts["format"]="best[ext=mp4]/best"
+                temp=_download(opts)
+            elif "403" in msg or "Forbidden" in msg:
+                # Some formats/clients get blocked with 403s; fall back to
+                # yt-dlp's own best-effort format selection with no client
+                # restriction, which often finds a working stream.
+                print("[FactLens] Got 403 from YouTube; retrying with default client/format selection.")
+                opts.pop("extractor_args", None)
+                opts["format"]="best"
+                temp=_download(opts)
+            else:
+                raise
         if not temp or not temp.exists(): raise HTTPException(422,"Could not download the video.")
         transcript=transcribe_video(str(temp))
         claims=extract_claims(transcript["text"])
@@ -80,7 +136,6 @@ def verify_video_url(url:str=Form(...)):
     finally:
         if temp:
             try:
-                import shutil
                 shutil.rmtree(Path(temp).parent,ignore_errors=True)
             except Exception: pass
 
